@@ -1,0 +1,123 @@
+\begin{center}
+{\bf Programming Project 2\\ }
+\end{center}
+
+%\vspace{0.3in}
+\noindent
+
+In this project, you will implement a client and a server
+which use UDP to transmit a file from the server to the client.
+
+As you know, UDP does not provide reliable data transfer, whereas a user
+transmitting a file would expect the file to be transferred reliably.
+This project will not implement reliable data transfer, but we will build a
+framework here which will be extended in Project 3 to achieve
+reliable data transfer.
+
+When the server starts, it waits for the client to send to it the name of the
+file to be transferred. When the client starts, it prompts the user to enter a
+filename and sends this name to the server. 
+The server then reads the file and sends its contents to the client in a series
+of packets as described below. The client receives the packets and
+stores them in a file with the name {\it out.txt}. It also returns an ACK for
+each packet it receives.
+
+\begin{verbatim}
+    --------------------------------------------------------
+    |                   Count (2 bytes)                    |
+    --------------------------------------------------------
+    |           Packet Sequence Number (2 bytes)           |
+    --------------------------------------------------------
+    |                 Data (0 - 80 bytes)                  |
+    --------------------------------------------------------
+\end{verbatim}
+
+The first field of the header is a count of the number of data characters in th
+packet. This value must be in the range 0 through 80. If the count is 0, then x
+there are no data characters in the packet. 
+The second field of the header is called the
+Packet Sequence Number. Each
+packet transmitted by the server is assigned
+a sequence number in the range 0 - 15.
+\begin{center}
+{\bf Programming Project 2\\ }
+\end{center}
+
+%\vspace{0.3in}
+\noindent
+
+In this project, you will implement a client and a server
+which use UDP to transmit a file from the server to the client.
+
+As you know, UDP does not provide reliable data transfer, whereas a user
+transmitting a file would expect the file to be transferred reliably.
+This project will not implement reliable data transfer, but we will build a
+framework here which will be extended in Project 3 to achieve
+reliable data transfer.
+
+When the server starts, it waits for the client to send to it the name of the
+file to be transferred. When the client starts, it prompts the user to enter a
+filename and sends this name to the server. 
+The server then reads the file and sends its contents to the client in a series
+of packets as described below. The client receives the packets and
+stores them in a file with the name {\it out.txt}. It also returns an ACK for
+each packet it receives.
+
+\begin{verbatim}
+    --------------------------------------------------------
+    |                   Count (2 bytes)                    |
+    --------------------------------------------------------
+    |           Packet Sequence Number (2 bytes)           |
+    --------------------------------------------------------
+    |                 Data (0 - 80 bytes)                  |
+    --------------------------------------------------------
+\end{verbatim}
+
+The first field of the header is a count of the number of data characters in th
+packet. This value must be in the range 0 through 80. If the count is 0, then x
+there are no data characters in the packet. 
+The second field of the header is called the
+Packet Sequence Number. Each
+packet transmitted by the server is assigned
+a sequence number in the range 0 - 15.
+\begin{center}
+{\bf Programming Project 2\\ }
+\end{center}
+
+%\vspace{0.3in}
+\noindent
+
+In this project, you will implement a client and a server
+which use UDP to transmit a file from the server to the client.
+
+As you know, UDP does not provide reliable data transfer, whereas a user
+transmitting a file would expect the file to be transferred reliably.
+This project will not implement reliable data transfer, but we will build a
+framework here which will be extended in Project 3 to achieve
+reliable data transfer.
+
+When the server starts, it waits for the client to send to it the name of the
+file to be transferred. When the client starts, it prompts the user to enter a
+filename and sends this name to the server. 
+The server then reads the file and sends its contents to the client in a series
+of packets as described below. The client receives the packets and
+stores them in a file with the name {\it out.txt}. It also returns an ACK for
+each packet it receives.
+
+\begin{verbatim}
+    --------------------------------------------------------
+    |                   Count (2 bytes)                    |
+    --------------------------------------------------------
+    |           Packet Sequence Number (2 bytes)           |
+    --------------------------------------------------------
+    |                 Data (0 - 80 bytes)                  |
+    --------------------------------------------------------
+\end{verbatim}
+
+The first field of the header is a count of the number of data characters in th
+packet. This value must be in the range 0 through 80. If the count is 0, then x
+there are no data characters in the packet. 
+The second field of the header is called the
+Packet Sequence Number. Each
+packet transmitted by the server is assigned
+a sequence number in the range 0 - 15.
