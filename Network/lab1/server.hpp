@@ -12,12 +12,12 @@ using namespace std;
 class FileMetaInfo{
     uint fileSize;
     uint nClients, nChunks;
-    unordered_map<ipaddr, bitset<NUM_CHUNK>> clientList;
+    unordered_map<peerid, bitset<NUM_CHUNK>> clientList;
 
-    bool checkChunk(const ipaddr client, const ushort chunk){
+    bool checkChunk(const peerid client, const ushort chunk){
         return clientList[client].test(chunk);
     }
-    bool setChunk(const ipaddr client, const ushort chunk){
+    bool setChunk(const peerid client, const ushort chunk){
         clientList[client].set(chunk);
         return checkChunk(client, chunk);
     }
@@ -43,24 +43,30 @@ public:
         vector<LocInfo> clients(nClients);
         int i = 0;
         for(const auto& fileInfo: clientList){
-            clients[i].ip = fileInfo.first;
+            clients[i].ip = (ipaddr)(fileInfo.first >> 32);
+            clients[i].port = (ushort)(fileInfo.first & 0xffff);
             clients[i].nChunks = countChunks(fileSize);
             clients[i++].chunkmap = fileInfo.second;
         }
         return clients;
     }
     // register a chunk when chunk register request is received
-    bool registerChunk(const ipaddr client, const ushort& chunk){
+    bool registerChunk(const peerid client, const ushort& chunk){
         if(chunk < 0 || chunk >= nChunks)
             return false;
         if(clientList.find(client) == clientList.end()){
             clientList[client] = bitset<NUM_CHUNK>();
             ++nClients;
         }
+
+        #ifdef DEBUG_SERVER
+        cout << "[Client] registering a chunk for " << "<ip>" << ":" << (ushort)(client & 0xffff) << endl;
+        #endif
+
         return setChunk(client, chunk);
     }
     // remove a client when leave request is received
-    bool removeClient(const ipaddr client){
+    bool removeClient(const peerid client){
         if(clientList.find(client) != clientList.end()){
             clientList[client].reset();
             clientList.erase(client);
@@ -120,9 +126,9 @@ class Server{
     // mutex lock to protect racing data
     static mutex fileLock, clientLock, slotLock;
     static unordered_map<string, FileMetaInfo> fileList;
-    static unordered_map<ipaddr, ClientMetaInfo> clientList;
+    static unordered_map<peerid, ClientMetaInfo> clientList;
 
-    static void registerRequest(const ipaddr client, const int clientSocket, const packet regRequest){
+    static void registerRequest(const peerid client, const int clientSocket, const packet regRequest){
         #ifdef DEBUG_SERVER
         cout << "[Server] Register Request" << endl;
         #endif
@@ -223,10 +229,8 @@ class Server{
         ushort nChunks = fileInfo.getChunks();
         uint n = fileInfo.getClients();
         reply.value = htonl(n);
-        vector<LocInfo> locations = fileInfo.getClientInfo();
         clientLock.lock();
-        for(int i = 0;i < n;++i)
-            locations[i].port = clientList[locations[i].ip].getPort();
+        vector<LocInfo> locations = fileInfo.getClientInfo();
         clientLock.unlock();
         // tell the client how many peers is holding the file
         send(clientSocket, &reply, sizeof(reply), 0);
@@ -254,10 +258,12 @@ class Server{
         #endif
 
         packet reply;
-        ipaddr client = chunkRequest.ip;
+        peerid client = (peerid)chunkRequest.ip;
         string fileName = string(chunkRequest.content);
         ushort chunk = ntohs(chunkRequest.value);
+        ushort port = ntohs(chunkRequest.port);
         bool check = true;
+        client = (client << 32) | port;
         // add file to client
         clientLock.lock();
         clientList[client].addFile(fileName);
@@ -278,7 +284,7 @@ class Server{
             reply.packetType = 0;
         send(clientSocket, &reply, sizeof(reply), 0);
     }
-    static void leaveRequest(const ipaddr client, const int clientSocket){
+    static void leaveRequest(const peerid client, const int clientSocket){
         #ifdef DEBUG_SERVER
         cout << "[Server] Leave Request" << endl;
         #endif
@@ -310,7 +316,7 @@ class Server{
             reply.packetType = 0;
         send(clientSocket, &reply, sizeof(reply), 0);
     }
-    static void execute(const ipaddr client, const int clientSocket){
+    static void execute(const peerid client, const int clientSocket){
         packet request;
         bool flag = true;
         while(flag){
@@ -370,7 +376,7 @@ public:
         int clientSocket = 0;
         uint sinSize = sizeof(struct sockaddr);
         ushort port;
-        ipaddr client;
+        peerid client;
         struct sockaddr_in clientAddr;
         thread clientThread;
         while(true){
@@ -380,7 +386,7 @@ public:
                 printf("[Server] client connection failed\n");
                 continue;
             }
-            client = clientAddr.sin_addr.s_addr;
+            client = (peerid)clientAddr.sin_addr.s_addr;
             cout << "[Server] " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << " connected" << endl;
             
             #ifdef DEBUG_SERVER
@@ -392,6 +398,7 @@ public:
 
             // get port used by client for sharing
             recv(clientSocket, &port, sizeof(port), MSG_WAITALL);
+            client = (client << 32) | port;
             // register client at server
             clientLock.lock();
             if(clientList.find(client) == clientList.end())
@@ -406,7 +413,7 @@ public:
 
 mutex Server::fileLock, Server::clientLock;
 unordered_map<string, FileMetaInfo> Server::fileList;
-unordered_map<ipaddr, ClientMetaInfo> Server::clientList;
+unordered_map<peerid, ClientMetaInfo> Server::clientList;
 
 #ifdef DEBUG_SERVER
 uint Server::nClients;

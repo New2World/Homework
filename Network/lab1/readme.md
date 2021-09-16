@@ -186,8 +186,6 @@ After starting the client, it will show a brief instruction. I assume each user 
 
 ## Limitations
 
-1. Cannot distinguish clients with the same IP but different ports;
-    - This means different clients must run with different IP addresses.
-2. Client cannot find peers behind NAT;
+1. Client cannot find peers behind NAT;
     - The reason is that clients can only find a peer via the IP and the port provided by server.
-3. Different files sharing the same name is forbidden;
+2. Different files sharing the same name is forbidden;

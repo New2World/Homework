@@ -203,7 +203,7 @@ class Client{
             cout << " + " << inet_ntoa(addrInfo) << ":" << loc.port << (full?" (integrated)":" (partial)") << endl;
         }
     }
-    static bool chunkRegisterRequest(const ipaddr peer, const string fileName, const ushort chunk){
+    static bool chunkRegisterRequest(const ipaddr peer, const ushort upPort, const string fileName, const ushort chunk){
         packet request;
         /* fill in information of request
          - type: chunk register request
@@ -213,6 +213,7 @@ class Client{
         */
         request.packetType = REQ_CHK;
         request.ip = peer;              // denote which peer has received this chunk
+        request.port = htons(upPort);
         strncpy(request.content, fileName.c_str(), fileName.size());
         request.content[fileName.size()] = 0;
         request.contentLength = htons(fileName.size());
@@ -239,7 +240,7 @@ class Client{
         }
         return true;
     }
-    static void uploadChunks(const ipaddr peer, const uint peerSocket, const string fileName){
+    static void uploadChunks(const ushort upPort, const ipaddr peer, const uint peerSocket, const string fileName){
         packet request;
         datapack fileBuf;
         fstream fileIn(filePath + fileName, ios::in | ios::binary);
@@ -283,7 +284,7 @@ class Client{
             // send chunk register request of this chunk to server
             recv(peerSocket, &request, sizeof(request), MSG_WAITALL);
             if(ntohs(request.value) == chunk)
-                chunkRegisterRequest(peer, fileName, chunk);
+                chunkRegisterRequest(peer, upPort, fileName, chunk);
 
             #ifdef DEBUG_CLIENT
             cout << "[Client:upload] " << fileName << ":(" << chunk+1 << ") succeed" << endl;
@@ -318,7 +319,7 @@ class Client{
             #endif
 
             // setup a thread for peer transmission
-            peerThread = thread(uploadChunks, peerAddr.sin_addr.s_addr, peerSocket, string(request.content));
+            peerThread = thread(uploadChunks, request.port, peerAddr.sin_addr.s_addr, peerSocket, string(request.content));
             peerThread.detach();
         }
     }
@@ -340,12 +341,13 @@ class Client{
         });
         return chunkseq;
     }
-    static void downloadChunks(const int peerSocket, const ipaddr peerip, const string fileName, const vector<ushort> chunkseq, const bitset<NUM_CHUNK> chunkmap){
+    static void downloadChunks(const int peerSocket, const ipaddr peerip, const ushort upPort, const string fileName, const vector<ushort> chunkseq, const bitset<NUM_CHUNK> chunkmap){
         ushort nChunks = fileChunks[fileName].nChunks;
         struct in_addr peerAddr;
         peerAddr.s_addr = peerip;
         packet request;
         request.packetType = REQ_DWN;
+        request.port = upPort;
         strncpy(request.content, fileName.c_str(), fileName.size());
         request.content[fileName.size()] = 0;
         request.contentLength = htons(fileName.size());
@@ -463,7 +465,8 @@ class Client{
                 return;
             }
             if(connect(peerSocket, (struct sockaddr *)&peerAddr, sizeof(struct sockaddr)) < 0){
-                printf("[Client:download] connection failed\n");
+                printf("[Client:download] connection failed ");
+                cout << "(" << inet_ntoa(peerAddr.sin_addr) << ":" << location.port << ")" << endl;
                 close(peerSocket);
                 return;
             }
@@ -473,7 +476,7 @@ class Client{
             #endif
 
             // setup a thread to download from peer
-            peerThreads[n++] = thread(downloadChunks, peerSocket, location.ip, fileName, chunkseq, location.chunkmap);
+            peerThreads[n++] = thread(downloadChunks, peerSocket, location.ip, uploadPort, fileName, chunkseq, location.chunkmap);
         }
         // wait for thread to finish transmission
         for(int i = 0;i < n;++i)

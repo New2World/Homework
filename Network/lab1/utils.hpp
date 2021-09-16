@@ -35,9 +35,10 @@
 #define REQ_LVE         0x5
 #define REQ_DWN         0x6
 
-#define DEBUG_SERVER
+// #define DEBUG_SERVER
 // #define DEBUG_CLIENT
 
+typedef unsigned long long peerid;
 typedef uint ipaddr;
 
 // file location
